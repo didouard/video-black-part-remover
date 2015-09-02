@@ -1,0 +1,35 @@
+{
+  "name": "video-black-part-remover",
+  "version": "1.0.0",
+  "description": "Automatically detect and remove black interval, from chapter transitions, commercials, invalid recordings",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/didouard/video-black-part-remover.git"
+  },
+  "keywords": [
+    "ffmpeg",
+    "black",
+    "part",
+    "video",
+    "remove",
+    "detect",
+    "blackdetect",
+    "automatic"
+  ],
+  "author": "Edouard FERRARI",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/didouard/video-black-part-remover/issues"
+  },
+  "homepage": "https://github.com/didouard/video-black-part-remover#readme",
+  "dependencies": {
+    "async": "^1.4.2",
+    "eventemitter3": "^1.1.1",
+    "fluent-ffmpeg": "^2.0.1",
+    "node-wrapper": "0.0.22"
+  }
+}
