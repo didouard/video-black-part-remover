@@ -1,6 +1,7 @@
 var async              = require('async');
 var EE                 = require('eventemitter3');
 var moment             = require('moment');
+var fs                 = require('fs');
 
 var ffmpeg             = require('../node-fluent-ffmpeg/index.js');
 
@@ -53,8 +54,6 @@ var remover = function (data, opt, callback) {
     };
 
     var processParts = function (black_parts, callback) {
-      if (black_parts.length < 1) return callback(null, []);
-
       var parts = [];
       var start = null;
       for (var i = 0; i < black_parts.length; i++) {
@@ -72,8 +71,6 @@ var remover = function (data, opt, callback) {
     };
     
     var remove = function (parts, callback) {
-      if (parts.length < 1) return callback();
-
       async.map(parts, function (part, callback) {
         var command = ffmpeg(video.source)
           .videoCodec('libx264')
@@ -108,7 +105,10 @@ var remover = function (data, opt, callback) {
     };
     
     var aggregate = function (parts, callback) {
-      if (parts.length < 1) return callback();
+      if (parts.length < 2) {
+        emitter.emit('debug', 'mv ' + '/tmp/part_0.ts ' + video.destination);
+        return fs.rename('/tmp/part_0.ts', video.destination, callback);
+      }
 
       var command = undefined;
       for (var i = 0; i < parts.length; i++) {
