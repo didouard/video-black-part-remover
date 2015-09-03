@@ -20,7 +20,7 @@ var remover = function (data, opt, callback) {
 
       var black_parts = [];
 
-      ffmpeg(video)
+      ffmpeg(video.source)
         .videoFilter(filter)
         .on('start', function (command) {
           emitter.emit('start', 'Spawned Ffmpeg with command: ' + command);
@@ -74,7 +74,7 @@ var remover = function (data, opt, callback) {
       emitter.emit('debug', ["parts : ", parts]);
       //return callback(null, parts);
       async.map(parts, function (part, callback) {
-        var command = ffmpeg(video)
+        var command = ffmpeg(video.source)
           .videoCodec('libx264')
           .size('1280x720')
           .audioCodec('copy')
@@ -124,7 +124,7 @@ var remover = function (data, opt, callback) {
         }).on('progress', function (progress) {
           //            emitter.emit('debug', progress);
         }).format('mpegts')
-        .mergeToFile('/mnt/temp/out.ts');
+        .mergeToFile(video.destination);
       
     };
     
