@@ -30,6 +30,7 @@
     "async": "^1.4.2",
     "eventemitter3": "^1.1.1",
     "fluent-ffmpeg": "^2.0.1",
+    "moment": "^2.10.6",
     "node-wrapper": "0.0.22"
   }
 }

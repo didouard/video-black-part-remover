@@ -1,5 +1,7 @@
 var async              = require('async');
 var EE                 = require('eventemitter3');
+var moment             = require('moment');
+
 var ffmpeg             = require('../node-fluent-ffmpeg/index.js');
 
 var regexBlackDetect   = /^\s*.*black_start:([\d\.]+) black_end:([\d\.]+) black_duration:([\d\.]+)\s*$/;
@@ -9,7 +11,8 @@ var remover = function (data, opt, callback) {
   var videos = undefined;
   var options = undefined;
 
-  var startOne = function (video) {
+  var startOne = function (video, callback) {
+    emitter.emit('debug', '\n ---- ' + moment().format("dddd, MMMM Do YYYY, h:mm:ss a"));
 
     var detect = function (callback) {
       var data = [];
@@ -23,18 +26,18 @@ var remover = function (data, opt, callback) {
       ffmpeg(video.source)
         .videoFilter(filter)
         .on('start', function (command) {
-          emitter.emit('start', 'Spawned Ffmpeg with command: ' + command);
+          emitter.emit('start', 'Detect');
+          emitter.emit('debug', command);
         })
         .on('error', function (stdout, stderr) {
-          emitter.emit('error', stdout, stderr);
+          callback({stdout: stdout, stderr: stderr});
         })
         .on('end', function () {
-          emitter.emit('end', "Finish");
-          emitter.emit('debug', ["black_parts : ", black_parts]);
+          emitter.emit('end', 'Detect');
           return callback(null, black_parts);
         })
         .on('progress', function (progress) {
-          //emitter.emit('debug', progress);
+          emitter.emit('progress', progress);
         })
         .on('stderr', function (line) {
           var match = line.match(regexBlackDetect);
@@ -71,8 +74,6 @@ var remover = function (data, opt, callback) {
     var remove = function (parts, callback) {
       if (parts.length < 1) return callback();
 
-      emitter.emit('debug', ["parts : ", parts]);
-      //return callback(null, parts);
       async.map(parts, function (part, callback) {
         var command = ffmpeg(video.source)
           .videoCodec('libx264')
@@ -82,14 +83,14 @@ var remover = function (data, opt, callback) {
             emitter.emit('start', 'Part #' + part.id + ' with command: ' + command);
           })
           .on('error', function (stdout, stderr) {
-            emitter.emit('error', stdout, stderr);
+            callback({stdout: stdout, stderr: stderr});
           })
           .on('end', function () {
             emitter.emit('end', "Finish part #" + part.id);
             return callback();
           })
           .on('progress', function (progress) {
-//            emitter.emit('debug', progress);
+            emitter.emit('progress', progress);
           })
           .format('mpegts')
           .output('/tmp/part_' + part.id + '.ts');
@@ -117,12 +118,12 @@ var remover = function (data, opt, callback) {
       command.on('start', function (command) {
           emitter.emit('start', 'Merge : Spawned Ffmpeg with command: ' + command);
         }).on('error', function (stdout, stderr) {
-          emitter.emit('error', stdout, stderr);
+          callback({stdout: stdout, stderr: stderr});
         }).on('end', function () {
           emitter.emit('end', "Merge finish");
           return callback();
         }).on('progress', function (progress) {
-          //            emitter.emit('debug', progress);
+          emitter.emit('progress', progress);
         }).format('mpegts')
         .mergeToFile(video.destination);
       
@@ -130,8 +131,11 @@ var remover = function (data, opt, callback) {
     
     var jobs = [detect, processParts, remove, aggregate];
     async.waterfall(jobs, function (err, results) {
-      if (err) return emitter.emit('error', err);
-      return emitter.emit('end', 'done');
+      if (err) {
+        emitter.emit('error', err);
+      }
+      emitter.emit('end', 'done');
+      callback();
     });
   };
 
@@ -143,9 +147,8 @@ var remover = function (data, opt, callback) {
   };
 
   this.start = function () {
-    async.map(videos, startOne, function (err, results) {
-      if (err) return callback(err);
-      
+    async.mapLimit(videos, 1, startOne, function (err, results) {
+      if (err) return callback(err);      
     });
   };
 };
